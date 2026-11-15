@@ -1,0 +1,14 @@
+{
+  "name": "haru-weight-diary",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GitHub Pages용 암호화 개인 체중 기록장",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "test": "node --test tests"
+  }
+}
