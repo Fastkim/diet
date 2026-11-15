@@ -34,6 +34,7 @@ function harness() {
   const dialogs = [...nodes.values()].filter((node) => node.id.endsWith('-dialog'));
   const documentListeners = new Map();
   const windowListeners = new Map();
+  const intervals = [];
   const stored = new Map();
   const storage = {
     getItem: (key) => stored.get(key) ?? null,
@@ -57,7 +58,7 @@ function harness() {
     window: { scrollTo() {}, addEventListener: (type, listener) => windowListeners.set(type, listener) },
     crypto: webcrypto,
     isSecureContext: true,
-    setInterval: () => 1,
+    setInterval(callback) { intervals.push(callback); return intervals.length; },
     clearInterval() {},
     setTimeout: () => 1,
     clearTimeout() {},
@@ -69,6 +70,8 @@ function harness() {
     run: (code) => vm.runInContext(code, context),
     start(value) { context.seed = value; vm.runInContext('startSession(seed); delete globalThis.seed;', context); },
     emit(type) { for (const listener of documentListeners.get(type) ?? []) listener(); },
+    emitWindow(type) { windowListeners.get(type)?.(); },
+    tickIntervals() { for (const callback of intervals) callback(); },
     get html() { return nodes.get('#app').innerHTML; },
   };
 }
@@ -182,14 +185,57 @@ test('January chart includes preceding calendar days in its average without clip
   }
 });
 
-test('leaving the tab clears unlocked private content immediately', () => {
+test('switching away from the tab and returning preserves the session and unsaved draft', () => {
   const app = harness();
   app.start({ version: 1, goal: null, records: [record('2026-11-15', 71.3, 'private-visible-note')] });
-  assert.match(app.html, /private-visible-note/);
+  const originalHTML = app.html;
+  const dialog = app.nodes.get('#record-dialog');
+  dialog.open = true;
+  dialog.innerHTML = 'unsaved-private-draft';
   app.document.hidden = true;
   app.emit('visibilitychange');
+  app.document.hidden = false;
+  app.emit('visibilitychange');
+  assert.equal(app.html, originalHTML);
+  assert.equal(app.nodes.get('#app').hidden, false);
+  assert.equal(app.run('data.records[0].note'), 'private-visible-note');
+  assert.equal(dialog.open, true);
+  assert.equal(dialog.innerHTML, 'unsaved-private-draft');
+});
+
+test('a session finishing in a background tab remains unlocked', () => {
+  const app = harness();
+  app.document.hidden = true;
+  app.start({ version: 1, goal: null, records: [record('2026-11-15', 71.3, 'background-session-note')] });
+  assert.equal(app.nodes.get('#app').hidden, false);
+  assert.equal(app.nodes.get('#access').hidden, true);
+  assert.match(app.html, /background-session-note/);
+  assert.equal(app.run('data.records.length'), 1);
+});
+
+test('five minutes of inactivity still locks even after switching away', () => {
+  const app = harness();
+  app.start({ version: 1, goal: null, records: [record('2026-11-15', 71.3, 'idle-private-note')] });
+  app.document.hidden = true;
+  app.emit('visibilitychange');
+  app.run('lastActivity = Date.now() - 4 * 60 * 1000;');
+  app.tickIntervals();
+  assert.equal(app.nodes.get('#app').hidden, false);
+  assert.match(app.html, /idle-private-note/);
+  app.run('lastActivity = Date.now() - 5 * 60 * 1000;');
+  app.tickIntervals();
   assert.equal(app.html, '');
   assert.equal(app.nodes.get('#app').hidden, true);
   assert.equal(app.run('data'), null);
-  assert.doesNotMatch(app.nodes.get('#access').innerHTML, /private-visible-note/);
+  assert.match(app.nodes.get('#access').innerHTML, /5분 동안 활동이 없어/);
+});
+
+test('leaving the page itself still locks and clears private content', () => {
+  const app = harness();
+  app.start({ version: 1, goal: null, records: [record('2026-11-15', 71.3, 'pagehide-private-note')] });
+  app.emitWindow('pagehide');
+  assert.equal(app.html, '');
+  assert.equal(app.nodes.get('#app').hidden, true);
+  assert.equal(app.run('data'), null);
+  assert.doesNotMatch(app.nodes.get('#access').innerHTML, /pagehide-private-note/);
 });

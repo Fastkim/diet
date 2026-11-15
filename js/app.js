@@ -56,7 +56,6 @@ function lock(message = '') {
 }
 
 function startSession(result) {
-  if (document.hidden) { lock(); return; }
   data = result; epoch++; lastActivity = Date.now();
   year = currentYear(); view = 'dashboard'; historyPage = 1; historyQuery = ''; historyMonth = ''; range = 'year';
   $('#access').hidden = true; $('#access').replaceChildren(); $('#app').hidden = false;
@@ -197,7 +196,7 @@ function renderHistory() {
 }
 
 function renderSettings() {
-  return `<div class="settings-grid"><section class="panel settings-card"><h2>기록 백업과 복원</h2><p>다른 기기에서도 기록을 이어가고 싶다면?<br>암호화된 파일로 안전하게 옮길 수 있어요.</p><div class="backup-actions"><button type="button" class="primary" data-action="backup">${icon('download')} 암호화 백업</button><button type="button" class="secondary" data-action="restore">${icon('upload')} 백업 가져오기</button></div><div class="notice">이 브라우저에 총 <strong>${data.records.length}개</strong>의 기록이 있어요.<br>백업 파일에는 모든 연도의 기록과 목표가 함께 담겨요. 복원할 때는 백업을 만들 때 사용한 비밀번호가 필요해요.</div><p class="detail-note">브라우저 데이터를 삭제하거나 시크릿 모드를 종료하면 기록이 사라질 수 있어요. 정기적으로 백업해 주세요. 비밀번호를 잊어버리면 복구할 수 없어요.</p></section><div class="settings-stack"><section class="panel settings-card"><h2>나만의 목표 체중</h2><p>목표는 선택이에요. 내가 원하는 숫자를 정해보세요.</p><form id="goal-form"><div class="goal-form"><label class="field"><span class="field-label">목표 체중 (kg)</span><input id="goal-weight" name="goal" type="number" min="20" max="500" step="0.1" inputmode="decimal" placeholder="예: 65.0" value="${data.goal===null?'':num(data.goal)}" required></label><button type="submit" class="primary">저장</button></div><p class="form-message" role="alert"></p></form>${data.goal!==null?'<button type="button" class="text-button" data-action="remove-goal">목표 설정 지우기</button>':''}</section><section class="panel settings-card"><div class="privacy-heading">${icon('shield')}<h2>기록은 나에게만</h2></div><ul class="privacy-list"><li>${icon('check')}<span>체중과 메모는 이 브라우저에 암호화해 저장해요. 서버나 GitHub에 전송하지 않아요.</span></li><li>${icon('check')}<span>다른 사람이 링크를 열어도 내 기록은 보이지 않아요. 같은 기기를 함께 쓴다면 사용 후 잠가주세요.</span></li><li>${icon('check')}<span>5분간 활동이 없거나 다른 탭으로 이동하면 자동으로 잠겨요. 저장하지 않은 입력은 사라져요.</span></li><li>${icon('check')}<span>기기 간 자동 동기화는 없어요. 기록을 옮길 때 암호화 백업을 사용해주세요.</span></li></ul></section></div></div>`;
+  return `<div class="settings-grid"><section class="panel settings-card"><h2>기록 백업과 복원</h2><p>다른 기기에서도 기록을 이어가고 싶다면?<br>암호화된 파일로 안전하게 옮길 수 있어요.</p><div class="backup-actions"><button type="button" class="primary" data-action="backup">${icon('download')} 암호화 백업</button><button type="button" class="secondary" data-action="restore">${icon('upload')} 백업 가져오기</button></div><div class="notice">이 브라우저에 총 <strong>${data.records.length}개</strong>의 기록이 있어요.<br>백업 파일에는 모든 연도의 기록과 목표가 함께 담겨요. 복원할 때는 백업을 만들 때 사용한 비밀번호가 필요해요.</div><p class="detail-note">브라우저 데이터를 삭제하거나 시크릿 모드를 종료하면 기록이 사라질 수 있어요. 정기적으로 백업해 주세요. 비밀번호를 잊어버리면 복구할 수 없어요.</p></section><div class="settings-stack"><section class="panel settings-card"><h2>나만의 목표 체중</h2><p>목표는 선택이에요. 내가 원하는 숫자를 정해보세요.</p><form id="goal-form"><div class="goal-form"><label class="field"><span class="field-label">목표 체중 (kg)</span><input id="goal-weight" name="goal" type="number" min="20" max="500" step="0.1" inputmode="decimal" placeholder="예: 65.0" value="${data.goal===null?'':num(data.goal)}" required></label><button type="submit" class="primary">저장</button></div><p class="form-message" role="alert"></p></form>${data.goal!==null?'<button type="button" class="text-button" data-action="remove-goal">목표 설정 지우기</button>':''}</section><section class="panel settings-card"><div class="privacy-heading">${icon('shield')}<h2>기록은 나에게만</h2></div><ul class="privacy-list"><li>${icon('check')}<span>체중과 메모는 이 브라우저에 암호화해 저장해요. 서버나 GitHub에 전송하지 않아요.</span></li><li>${icon('check')}<span>다른 사람이 링크를 열어도 내 기록은 보이지 않아요. 같은 기기를 함께 쓴다면 사용 후 잠가주세요.</span></li><li>${icon('check')}<span>다른 탭이나 앱으로 전환해도 열린 상태를 유지해요. 5분간 활동이 없으면 자동으로 잠겨요. 저장하지 않은 입력은 사라져요.</span></li><li>${icon('check')}<span>기기 간 자동 동기화는 없어요. 기록을 옮길 때 암호화 백업을 사용해주세요.</span></li></ul></section></div></div>`;
 }
 
 function openRecord(date=todayISO()) {
@@ -367,7 +366,6 @@ for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener(
 });
 for(const event of ['pointerdown','keydown','input','scroll'])document.addEventListener(event,()=>{lastActivity=Date.now();},{passive:true});
 setInterval(()=>{if(data&&Date.now()-lastActivity>=5*60*1000)lock('5분 동안 활동이 없어 기록장을 잠갔어요.');},10000);
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&vault)lock('화면을 벗어나 기록장을 잠갔어요.');});
 window.addEventListener('pagehide',()=>{if(vault)lock();});
 window.addEventListener('storage',event=>{if(event.key===STORAGE_KEY||event.key===null)lock('다른 탭에서 보관함이 바뀌었어요. 다시 열어주세요.');});
 
